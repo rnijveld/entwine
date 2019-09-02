@@ -22,6 +22,9 @@
 #include <string>
 #include <vector>
 
+#include <pdal/PluginManager.hpp>
+#include <pdal/Stage.hpp>
+
 #include <entwine/third/arbiter/arbiter.hpp>
 #include <entwine/types/defs.hpp>
 #include <entwine/types/srs.hpp>
@@ -304,6 +307,8 @@ int main(int argc, char** argv)
 
     try
     {
+        pdal::PluginManager<pdal::Stage>::get().loadAll();
+
         if (app == "scan")
         {
             entwine::app::Scan().go(args);

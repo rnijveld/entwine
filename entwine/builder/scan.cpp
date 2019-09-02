@@ -64,8 +64,7 @@ void Scan::read()
         FileInfo& f(m_files.get(i));
         if (m_in.verbose())
         {
-            std::cout << i + 1 << "/" << size << ": " << f.path() <<
-                std::endl;
+            std::cout << i + 1 << "/" << size << ": " << f.path() << std::endl;
         }
         add(f);
     }

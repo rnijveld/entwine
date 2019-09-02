@@ -54,8 +54,12 @@ Executor::~Executor()
 
 bool Executor::good(const std::string path) const
 {
+    // TODO: Plugin extensions are not showing up here.
+    return true;
+    /*
     auto ext(arbiter::Arbiter::getExtension(path));
     return ext != "txt" && !m_stageFactory->inferReaderDriver(path).empty();
+    */
 }
 
 ScanInfo::ScanInfo(pdal::Stage& reader, const pdal::QuickInfo& qi)
