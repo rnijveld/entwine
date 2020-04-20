@@ -2565,10 +2565,10 @@ namespace
         std::string m_object;
 
     };
-    
+
     // https://cloud.google.com/storage/docs/json_api/#encoding
     const char GResource::exclusions[] = "!$&'()*+,;=:@";
-    
+
 } // unnamed namespace
 
 namespace drivers
@@ -2618,20 +2618,28 @@ bool Google::get(
     const GResource resource(path);
 
     drivers::Https https(m_pool);
-    const auto res(
-            https.internalGet(resource.endpoint(), headers, altMediaQuery));
+    std::size_t tries(40);
 
-    if (res.ok())
-    {
-        data = res.data();
-        return true;
-    }
-    else
-    {
-        std::cout <<
-            "Failed get - " << res.code() << ": " << res.str() << std::endl;
-        return false;
-    }
+    do {
+        const auto res(
+                https.internalGet(resource.endpoint(), headers, altMediaQuery));
+
+        if (res.ok())
+        {
+            data = res.data();
+            return true;
+        }
+        else if (res.code() != 500)
+        {
+            std::cout <<
+                "Failed get - " << res.code() << ": " << res.str() << std::endl;
+            return false;
+        }
+        tries--;
+    } while (tries > 0);
+
+    std::cout << "Failed get after repeated tries" << std::endl;
+    return false;
 }
 
 void Google::put(

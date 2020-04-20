@@ -262,7 +262,7 @@ void Scan::addLas(FileInfo& f)
 
     m_tmp.put(basename, data);
     add(f, m_tmp.fullPath(basename));
-    arbiter::remove(m_tmp.fullPath(basename));
+    // arbiter::remove(m_tmp.fullPath(basename));
 }
 
 void Scan::addRanged(FileInfo& f)
