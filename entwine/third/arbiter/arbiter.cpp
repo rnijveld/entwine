@@ -64,6 +64,10 @@ SOFTWARE.
 #include <algorithm>
 #include <cstdlib>
 #include <sstream>
+#include <chrono>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
 #ifdef ARBITER_CUSTOM_NAMESPACE
 namespace ARBITER_CUSTOM_NAMESPACE
@@ -2607,20 +2611,44 @@ std::unique_ptr<std::size_t> Google::tryGetSize(const std::string path) const
     return std::unique_ptr<std::size_t>();
 }
 
+const std::size_t retries(40);
+std::mutex mutex;
+
+void sleep(std::size_t tried, std::string method, std::string path)
+{
+    std::this_thread::sleep_for(std::chrono::seconds(tried));
+
+    std::lock_guard<std::mutex> lock(mutex);
+    std::cout <<
+        "\tFailed " << method << " attempt " << tried << ": " << path <<
+        std::endl;
+}
+
+void suicide(std::string method)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    std::cout <<
+        "\tFailed to " << method << " data: persistent failure.\n" <<
+        "\tThis is a non-recoverable error." <<
+        std::endl;
+
+    throw std::runtime_error("Fatal error - could not " + method);
+}
+
 bool Google::get(
         const std::string path,
         std::vector<char>& data,
         const http::Headers userHeaders,
         const http::Query query) const
 {
-    http::Headers headers(m_auth->headers());
-    headers.insert(userHeaders.begin(), userHeaders.end());
-    const GResource resource(path);
+    std::size_t tried(0);
 
-    drivers::Https https(m_pool);
-    std::size_t tries(40);
+    while (tried < retries) {
+        http::Headers headers(m_auth->headers());
+        headers.insert(userHeaders.begin(), userHeaders.end());
+        const GResource resource(path);
 
-    do {
+        drivers::Https https(m_pool);
         const auto res(
                 https.internalGet(resource.endpoint(), headers, altMediaQuery));
 
@@ -2635,10 +2663,13 @@ bool Google::get(
                 "Failed get - " << res.code() << ": " << res.str() << std::endl;
             return false;
         }
-        tries--;
-    } while (tries > 0);
 
-    std::cout << "Failed get after repeated tries" << std::endl;
+        if (++tried < retries) {
+            sleep(tried++, "GET", path);
+        }
+    }
+
+    suicide("GET");
     return false;
 }
 
